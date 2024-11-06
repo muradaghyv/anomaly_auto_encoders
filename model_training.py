@@ -23,10 +23,11 @@ df = pd.read_csv("data.csv")
 
 # Adjusting the label column so that, normal connections are labeled as 0, whereas the others are 1
 df["label"] = df["label"].apply(lambda x: 0 if x=="normal." else 1)
+normal_data = df[df["label"]==0]
 
 # After EDA, we found out that the necessary columns are as follows
 final_cols = ["protocol_type", "logged_in", "count", "srv_count", "srv_diff_host_rate", "dst_host_count", "dst_host_same_src_port_rate"]
-final_data = df[final_cols]
+final_data = normal_data[final_cols]
 
 # Creating pipeline for preprocessing training, validation and testing datasets 
 scaling_cols = ["count", "srv_count", "dst_host_count"] # Numeric columns that need to be scaled
@@ -49,12 +50,12 @@ pipeline = Pipeline(
     ]
 )
 
-# Splitting X and y 
-# X = df.drop("label", axis=1)
-y = df["label"]
+# Splitting X and y
+X = final_data
+y = normal_data["label"]
 
 # Splitting data into training and validation sets
-X_train, X_val, y_train, y_val = train_test_split(final_data, df["label"], train_size=0.75, stratify=df["label"], random_state=42)
+X_train, X_val, y_train, y_val = train_test_split(X, y, train_size=0.75, random_state=42)
 
 # Applying pipeline transforms to the training and validation sets 
 X_train_processed = pipeline.fit_transform(X_train)
@@ -101,4 +102,4 @@ for epoch in range(num_epochs):
     
     print(f"Epoch {epoch}: Training loss => {tr_loss}; Validation loss => {val_loss}")
 
-torch.save(model, "anomaly_detection.pth")
+torch.save(model, "anomaly_detection_updated.pth")
