@@ -10,3 +10,12 @@
 Things that need to be done:
 1) Model structure needs to be improved, because the final accuracy is approximately 60%. Learning rate scheduling, learning rate adjustments can be done. Validation step can be added to the model building steps.
 2) Overfitting should be checked, if it occurs.
+
+I have improved the model's performances and metrics are as follows:
+The accuracy score is 89.65 %.
+The Recall score for normal cases: 95.75 %.
+The Recall score for anomalous cases: 79.7 %.
+
+It can be understood from these results that the model is showing pretty descent results. However, the accuracy for the anomalous cases can be higher.
+Therefore, the model structure should be improved for increasing the accuracy for the anomalous cases.
+
