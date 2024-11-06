@@ -12,9 +12,9 @@ Things that need to be done:
 2) Overfitting should be checked, if it occurs.
 
 I have improved the model's performances and metrics are as follows:
-The accuracy score is 89.65 %.
-The Recall score for normal cases: 95.75 %.
-The Recall score for anomalous cases: 79.7 %.
+1) The accuracy score is 89.65 %.
+2) The Recall score for normal cases: 95.75 %.
+3) The Recall score for anomalous cases: 79.7 %.
 
 It can be understood from these results that the model is showing pretty descent results. However, the accuracy for the anomalous cases can be higher.
 Therefore, the model structure should be improved for increasing the accuracy for the anomalous cases.
