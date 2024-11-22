@@ -3,3 +3,4 @@
 * Proper documentation to functions and objects
 * Deep understanding of new improvements
 * Visual monitoring of results
+* Make everything neater (folders)
