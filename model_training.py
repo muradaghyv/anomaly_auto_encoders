@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from sklearn.model_selection import train_test_split
-
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
+from sklearn.metrics import f1_score
 
 import torch
 import torch.nn as nn
@@ -78,88 +78,31 @@ input_val = input_val.to(device=device)
 
 # Model definition and training
 input_size = X_train_processed.shape[1]
+                
+model = AutoEncoder(input_size=input_size) # Model definition
+criterion = nn.MSELoss() # Loss definition
+optimizer = optim.Adam(params=model.parameters(), lr=0.001) # Optimizer definition
+model.to(device=device) # Sending model to device
 
-# model = AutoEncoder(size=size) # Model definition
-# criterion = nn.MSELoss() # Loss definition
-# optimizer = optim.Adam(params=model.parameters(), lr=0.001) # Optimizer definition
-# model.to(device=device) # Sending model to device
+train_dataset = torch.utils.data.TensorDataset(input_train)
+val_dataset = torch.utils.data.TensorDataset(input_val)
 
-# training_losses = []
-# validation_losses = []
-# num_epochs = 250
+train_loader = torch.utils.data.DataLoader(
+    dataset=train_dataset,
+    batch_size=64,
+    shuffle=True
+)
 
-# for epoch in range(num_epochs):
-#     model.train()
-#     optimizer.zero_grad()
+val_loader = torch.utils.data.DataLoader(
+    dataset=val_dataset,
+    batch_size=64,
+    shuffle=False
+)
 
-#     outputs = model(input_train)
-#     tr_loss = criterion(outputs, input_train)
+training_losses, validation_losses = model.train_model(train_loader=train_loader, val_loader=val_loader,
+                                                 criterion=criterion, device=device,
+                                                 optimizer=optimizer, num_epochs=150)
 
-#     tr_loss.backward()
-#     optimizer.step()
-
-#     training_losses.append(tr_loss)
-
-#     model.eval()
-#     with torch.no_grad():
-#         val_output = model(input_val)
-#         val_loss = criterion(val_output, input_val)
-#         validation_losses.append(val_loss)
-    
-#     print(f"Epoch {epoch}: Training loss => {tr_loss}; Validation loss => {val_loss}")
-
-# torch.save(model, "anomaly_detection_updated.pth")
-
-
-def train_autoencoder(model, train_loader, val_loader, criterion, optimizer,
-                      num_epochs, device=device, early_stopping_patience=10):
-    
-    training_losses = []
-    validation_losses = []
-    best_val_loss = float("inf")
-    patience_encounter = 0
-
-    for epoch in range(num_epochs):
-        model.train()
-        epoch_loss = 0.0
-        batch_count = 0
-
-        for batch in train_loader:
-            batch = batch[0].to(device)
-
-            optimizer.zero_grad()
-            reconstructed = model(batch)
-            loss = criterion(reconstructed, batch)
-
-            loss.backward()
-            optimizer.step()
-
-            epoch_loss += loss.item()
-            batch_count += 1
-        
-        avg_train_loss = epoch_loss/batch_count
-        training_losses.append(avg_train_loss)
-
-        val_loss = model.validate(val_loader, criterion, device)
-        validation_losses.append(val_loss)
-
-        if (epoch+1) % 5 == 0:
-            print(f"Epoch: {epoch}")
-            print(f"Training loss: {avg_train_loss}")
-            print(f"Validation loss: {val_loss}")
-
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
-            patience_encounter = 0
-            torch.save(model, "best_model.pth")
-        else:
-            patience_encounter += 1
-            if patience_encounter >= early_stopping_patience:
-                print(f"Training stopped after {epoch} epochs!")
-                break
-        
-    return training_losses, validation_losses
-    
 def plot_history(training_losses, validation_losses, save_dir="history.png"):
     if torch.is_tensor(training_losses[0]):
         training_losses = [loss.cpu().detach().numpy() for loss in training_losses]
@@ -209,29 +152,5 @@ def plot_history(training_losses, validation_losses, save_dir="history.png"):
     print(f"\nTraining Loss Improvement: {training_improvement:.2f}%")
     print(f"Validation Loss Improvement: {validation_improvement:.2f}%")
 
-
-model = AutoEncoder(input_size=input_size) # Model definition
-criterion = nn.MSELoss() # Loss definition
-optimizer = optim.Adam(params=model.parameters(), lr=0.001) # Optimizer definition
-model.to(device=device) # Sending model to device
-
-train_dataset = torch.utils.data.TensorDataset(input_train)
-val_dataset = torch.utils.data.TensorDataset(input_val)
-
-train_loader = torch.utils.data.DataLoader(
-    dataset=train_dataset,
-    batch_size=64,
-    shuffle=True
-)
-
-val_loader = torch.utils.data.DataLoader(
-    dataset=val_dataset,
-    batch_size=64,
-    shuffle=False
-)
-
-training_losses, validation_losses = train_autoencoder(model=model, train_loader=train_loader,
-                                                       val_loader=val_loader, optimizer=optimizer,
-                                                        num_epochs=150, criterion=criterion)
-
 plot_history(training_losses=training_losses, validation_losses=validation_losses)
+
