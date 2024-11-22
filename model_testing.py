@@ -20,6 +20,9 @@ model.eval()
 # Reading the test dataset
 df = pd.read_csv("test_data.csv", index_col="Unnamed: 0")
 
+df_copy = df.copy()
+df_copy["label"] = df_copy["label"].apply(lambda x: 0 if x=="normal." else 1)
+
 # Columns that were used for training
 cols = ["protocol_type", "logged_in", "count", "srv_count", "srv_diff_host_rate", "dst_host_count", "dst_host_same_src_port_rate"]
 testing_data = df[cols]
@@ -39,11 +42,14 @@ with torch.no_grad():
 # Loss function definition
 criterion = nn.MSELoss()
 
+# Optimal threshold value
+optimal_threshold_value = model.optimal_threshold(validation_data=input_tensor, labels=df_copy["label"])
+print(f"optimal threshold is: {optimal_threshold_value}")
 # Prediction mapping
 predictions = []
 for i in range(df.shape[0]):
     error = criterion(outputs[i], input_tensor[i])
-    if error >= 0.03:
+    if error >= optimal_threshold_value:
         predictions.append(1)
     else:
         predictions.append(0)
@@ -64,29 +70,7 @@ print(f"The Recall score for normal cases: {round(recall_0*100, 2)} %.")
 print(f"The Recall score for anomalous cases: {round(recall_1*100, 2)} %.")
 
 # Saving final results_df
-# results_df.to_csv("results.csv")
-
-def optimal_threshold(model, validation_data, labels):
-    model.eval()
-    with torch.no_grad():
-        _, errors = model.get_reconstruction_error(validation_data.to(device))
-        
-        thresholds = np.percentile(errors.cpu().detach().numpy(), np.arange(0, 100, 5))
-        error_arr = errors.cpu().detach().numpy()
-        best_f1 = 0
-        best_threshold = None
-
-        for threshold in thresholds:
-            predictions = (error_arr > threshold)
-            f1 = f1_score(predictions, labels)
-
-            if f1 > best_f1:
-                best_f1 = f1
-                best_threshold = threshold
-
-    return best_threshold
-optimal_threshold_value = optimal_threshold(model=model, validation_data=input_tensor, labels=results_df["label"])
-print(f"optimal threshold is: {optimal_threshold_value}")
+results_df.to_csv("results.csv")
 
 
 
