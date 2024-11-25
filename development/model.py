@@ -1,3 +1,4 @@
+# Importing necessary libraries
 import numpy as np
 
 from sklearn.metrics import f1_score
@@ -9,9 +10,16 @@ torch.cuda.empty_cache()
 device = ("cuda" if torch.cuda.is_available() else "cpu")
 
 class AutoEncoder(nn.Module):
-
     def __init__(self, input_size, hidden_sizes=[64, 32, 16], dropout_rate=0.2):
-
+        """
+        Initializes encoder, decoder layers, dropout regularization and Xavier
+        initialization of weights.
+        Args:
+            input_size: the input size of the data fed into the model
+            hidden_sizes: the internal layes sizes, there are 2*(hidden_sizes) layers, 
+                because auto-encoder layer is symmetrical (encoder and decoder part).
+            dropout_rate: dropout rate for regularization
+        """
         super(AutoEncoder, self).__init__()
 
         # Defining encoder layers
@@ -31,7 +39,7 @@ class AutoEncoder(nn.Module):
 
         # Defining decoder layers
         decoder_layers = []
-        hidden_sizes_reversed = hidden_sizes[::-1]
+        hidden_sizes_reversed = hidden_sizes[::-1] # Decoder structure is symmetrical to the encoder structure
         current_size = hidden_sizes_reversed[0]
 
         for hidden_size in hidden_sizes_reversed[1:]:
@@ -43,36 +51,48 @@ class AutoEncoder(nn.Module):
             ])
             current_size = hidden_size
         
-        # Final decoder layer for reconstruction
+        # Final decoder layer for reconstruction the input
         decoder_layers.append(nn.Linear(current_size, input_size))
         
         self.decoder = nn.Sequential(*decoder_layers)
 
-        # Initializing weight using Xavier initiliazation
+        # Initializing weights using Xavier initiliazation
         self.apply(self._init_weights)
     
     def _init_weights(self, module):
+        """
+        Initializes Xavier initialization of weights to all Linear layers.
+        """
         if isinstance(module, nn.Linear):
             nn.init.xavier_normal_(module.weight)
             if module.bias is not None:
                 nn.init.zeros_(module.bias)
     
     def forward(self, x):
-        
+        """Forward pass"""
         encoded = self.encoder(x)
         decoded = self.decoder(encoded)
 
         return decoded
     
     def get_reconstruction_error(self, x):
-
+        """
+        MSE between input data and output of the model.
+        High error means anomaly.
+        """
         reconstructed = self.forward(x)
         error = torch.mean((x-reconstructed)**2, dim=1)
 
         return reconstructed, error
     
     def validate(self, val_loader, criterion, device):
-
+        """
+        Proper validation step.
+        Args:
+            val_loader: data loader for the validation data
+            criterion: Loss function for the validation
+            device: cuda or cpu for calculation
+        """
         self.eval()
         total_loss = 0.0
         num_batches = 0
@@ -90,6 +110,12 @@ class AutoEncoder(nn.Module):
         return avg_loss
     
     def optimal_threshold(self, validation_data, labels):
+        """
+        Calculates the best threshold value for defining datapoint an anomaly or normal data
+        Args:
+            validation_data: validation data 
+            labels: ground truth values (anomaly or not).
+        """
         self.eval()
         with torch.no_grad():
             _, errors = self.get_reconstruction_error(validation_data.to(device))
@@ -111,7 +137,21 @@ class AutoEncoder(nn.Module):
     
     def train_model(self, train_loader, val_loader, criterion, optimizer,
               num_epochs, device, early_stopping_patience=10):
-        
+        """
+        Train function for training the auto-encoder.
+        Args:
+            train_loader: data loader for training data
+            val_loader: data loader for the validation data
+            criterion: loss function 
+            optimizer: optimizer for backprop
+            num_epochs: number of total training epochs
+            device: cpu or cuda for calculation
+            early_stopping_patience: how many epochs will model wait
+                if validation loss doesn't improve
+        Outputs:
+            training_losses: errors of training
+            validation_losses: errors of validation
+        """
         training_losses = []
         validation_losses = []
         best_val_loss = float("inf")
