@@ -42,9 +42,10 @@ with torch.no_grad():
 # Loss function definition
 criterion = nn.MSELoss()
 
-# Optimal threshold value
+# Optimal threshold value calculation
 optimal_threshold_value = model.optimal_threshold(validation_data=input_tensor, labels=df_copy["label"])
 print(f"optimal threshold is: {optimal_threshold_value}")
+
 # Prediction mapping
 predictions = []
 for i in range(df.shape[0]):
@@ -66,6 +67,7 @@ print(f"The accuracy score is {round(score*100, 2)} %.")
 
 recall_0 = recall_score(results_df["label"], results_df["prediction"], pos_label=0)
 recall_1 = recall_score(results_df["label"], results_df["prediction"], pos_label=1)
+
 print(f"The Recall score for normal cases: {round(recall_0*100, 2)} %.")
 print(f"The Recall score for anomalous cases: {round(recall_1*100, 2)} %.")
 

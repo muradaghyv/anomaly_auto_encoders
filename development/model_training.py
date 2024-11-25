@@ -1,3 +1,4 @@
+# Importing necessary libraries
 import pandas as pd
 import numpy as np
 
@@ -76,7 +77,7 @@ input_val = torch.tensor(X_val_processed, dtype=torch.float32)
 input_train = input_train.to(device=device)
 input_val = input_val.to(device=device)
 
-# Model definition and training
+# Model, criterion and optimizer definition
 input_size = X_train_processed.shape[1]
                 
 model = AutoEncoder(input_size=input_size) # Model definition
@@ -84,9 +85,11 @@ criterion = nn.MSELoss() # Loss definition
 optimizer = optim.Adam(params=model.parameters(), lr=0.001) # Optimizer definition
 model.to(device=device) # Sending model to device
 
+# Converting dataset into the tensor dataset
 train_dataset = torch.utils.data.TensorDataset(input_train)
 val_dataset = torch.utils.data.TensorDataset(input_val)
 
+# Data loaders for training and validation
 train_loader = torch.utils.data.DataLoader(
     dataset=train_dataset,
     batch_size=64,
@@ -99,10 +102,12 @@ val_loader = torch.utils.data.DataLoader(
     shuffle=False
 )
 
+# Training the model
 training_losses, validation_losses = model.train_model(train_loader=train_loader, val_loader=val_loader,
                                                  criterion=criterion, device=device,
                                                  optimizer=optimizer, num_epochs=150)
 
+# Function for plotting the results and history of the training
 def plot_history(training_losses, validation_losses, save_dir="history.png"):
     if torch.is_tensor(training_losses[0]):
         training_losses = [loss.cpu().detach().numpy() for loss in training_losses]
